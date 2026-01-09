@@ -41,6 +41,7 @@ class Panel(ScreenPanel):
     ENDSTOP_GATE     = "mmu_gate"   # Gate
     ENDSTOP_EXTRUDER = "extruder"   # Extruder
     ENDSTOP_TOOLHEAD = "toolhead"
+    SENSOR_PROPORTIONAL = "filament_proportional"
 
     NOT_SET = -99
 
@@ -253,15 +254,21 @@ class Panel(ScreenPanel):
     def process_update(self, action, data):
         if action == "notify_status_update":
             try:
+                did_update_filament_status = False
+                
                 if 'mmu_encoder mmu_encoder' in data: # There is only one mmu_encoder
                     ee_data = data['mmu_encoder mmu_encoder']
                     self.update_encoder(ee_data)
 
                 if 'filament_switch_sensor toolhead_sensor' in data or 'filament_switch_sensor mmu_gate_sensor' in data or 'filament_switch_sensor extruder_sensor' in data:
                     self.update_filament_status()
+                    did_update_filament_status = True
 
                 if 'mmu' in data:
                     e_data = data['mmu']
+                    if 'sync_feedback_bias_modelled' in e_data and not did_update_filament_status:
+                        self.update_filament_status()
+                        did_update_filament_status = True
                     if 'tool' in e_data or 'gate' in e_data or 'ttg_map' in e_data or 'gate_status' in e_data or 'gate_color' in e_data:
                         self.update_status()
                     if 'tool' in e_data or 'filament_pos' in e_data or 'filament_direction' in e_data:
@@ -662,22 +669,23 @@ class Panel(ScreenPanel):
         past  = lambda pos: arrow if filament_pos >= pos else space
         homed = lambda pos, sensor: (arrow,arrow,sensor) if filament_pos > pos else (home,space,sensor) if filament_pos == pos else (space,space,sensor)
         nozz  = lambda pos: (arrow,arrow,arrow) if filament_pos == pos else (space,gate,' ')
-        trig  = lambda name, sensor: re.sub(r'[a-zA-Z◯]', '●', name) if self._check_sensor(sensor) else name
-        bseg = 4 + 2 * sum(not self._has_sensor(sensor) for sensor in [self.ENDSTOP_ENCODER, self.ENDSTOP_GATE, self.ENDSTOP_EXTRUDER, self.ENDSTOP_TOOLHEAD]) - (tool == self.TOOL_GATE_BYPASS)
+        trig  = lambda name, sensor: re.sub(r'[a-zA-Z◯]', '●', name) if self._check_sensor(sensor) else name        
+        bseg = 4 + 2 * sum(not self._has_sensor(sensor) for sensor in [self.ENDSTOP_ENCODER, self.ENDSTOP_GATE, self.SENSOR_PROPORTIONAL, self.ENDSTOP_EXTRUDER, self.ENDSTOP_TOOLHEAD]) - (tool == self.TOOL_GATE_BYPASS)
 
         t_str   = ("T%s " % str(tool))[:3] if tool >= 0 else "BYPASS " if tool == self.TOOL_GATE_BYPASS else "T? "
         g_str   = "{0}{0}".format(past(self.FILAMENT_POS_UNLOADED))
         gs_str  = "{0}{2}{1}{1}{1}".format(*homed(self.FILAMENT_POS_HOMED_GATE, trig(gs, self.ENDSTOP_GATE))) if self._has_sensor(self.ENDSTOP_GATE) else ""
         en_str  = "En{0}{0}".format(past(self.FILAMENT_POS_IN_BOWDEN if gate_homing_endstop == self.ENDSTOP_GATE else self.FILAMENT_POS_START_BOWDEN)) if self._has_sensor(self.ENDSTOP_ENCODER) else ""
         bowden1 = "{0}".format(past(self.FILAMENT_POS_IN_BOWDEN)) * bseg
+        ps_str = "[{0:02d}]".format(int(self._check_sensor(self.SENSOR_PROPORTIONAL)*100))
         bowden2 = "{0}".format(past(self.FILAMENT_POS_END_BOWDEN)) * bseg
         es_str  = "{0}{2}{1}{1}{1}".format(*homed(self.FILAMENT_POS_HOMED_ENTRY, trig(es, self.ENDSTOP_EXTRUDER))) if self._has_sensor(self.ENDSTOP_EXTRUDER) else ""
         ex_str  = "{0}{2}{1}{1}{1}".format(*homed(self.FILAMENT_POS_HOMED_EXTRUDER, "Ex"))
         ts_str  = "{0}{2}{1}{1}{1}".format(*homed(self.FILAMENT_POS_HOMED_TS, trig(ts, self.ENDSTOP_TOOLHEAD))) if self._has_sensor(self.ENDSTOP_TOOLHEAD) else ""
         nz_str  = "{0}{1}Nz{2}{2}".format(*nozz(self.FILAMENT_POS_LOADED))
         summary = " LOADED" if filament_pos == self.FILAMENT_POS_LOADED else " UNLOADED" if filament_pos == self.FILAMENT_POS_UNLOADED else " UNKNOWN" if filament_pos == self.FILAMENT_POS_UNKNOWN else " ▷▷▷" if filament_direction == self.DIRECTION_LOAD else " ◁◁◁" if filament_direction == self.DIRECTION_UNLOAD else ""
-
-        visual = "".join((t_str, g_str, gs_str, en_str, bowden1, bowden2, es_str, ex_str, ts_str, nz_str, summary))
+        
+        visual = "".join((t_str, g_str, gs_str, en_str, bowden1, ps_str, bowden2, es_str, ex_str, ts_str, nz_str, summary))
 
         last_home = visual.rfind(home)
         last_index = visual.rfind(arrow)
@@ -721,6 +729,10 @@ class Panel(ScreenPanel):
                 return True
             else:
                 return None
+        
+        if s == self.SENSOR_PROPORTIONAL:
+            value = self._printer.get_stat('mmu', 'sync_feedback_bias_modelled')
+            return value
 
         sensor = self._printer.get_stat(f"filament_switch_sensor {s}_sensor")
         if sensor:
@@ -735,6 +747,9 @@ class Panel(ScreenPanel):
     def _has_sensor(self, s):
         if s == self.ENDSTOP_ENCODER:
             return self._printer.get_stat('mmu_encoder mmu_encoder', None)
+        
+        if s == self.SENSOR_PROPORTIONAL:
+            return self._printer.get_stat('filament_proportional', None)
 
         sensor = self._printer.get_stat(f"filament_switch_sensor {s}_sensor")
         if sensor:

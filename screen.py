@@ -322,7 +322,8 @@ class KlipperScreen(Gtk.Window):
                 "mmu": ["enabled", "is_locked", "is_homed", "tool", "next_tool", "last_tool", "last_toolchange", "gate",
                     "clog_detection", "endless_spool", "filament", "servo", "gate_status", "gate_material", "gate_color",
                     "gate_spool_id", "endless_spool_groups", "ttg_map", "filament_pos", "filament_direction", "action",
-                    "has_bypass", "sync_drive", "tool_extrusion_multipliers", "tool_speed_multipliers", "print_state"],
+                    "has_bypass", "sync_drive", "sync_feedback_bias_modelled", "tool_extrusion_multipliers", 
+                    "tool_speed_multipliers", "print_state"],
             }
         }
         for extruder in self.printer.get_tools():
@@ -1260,6 +1261,7 @@ class KlipperScreen(Gtk.Window):
             'exclude_object',
             'manual_probe',
             'mmu', # Happy Hare
+            'filament_proportional', # Happy Hare
             *self.printer.get_tools(),
             *self.printer.get_heaters(),
             *self.printer.get_temp_sensors(),
