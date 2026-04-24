@@ -40,7 +40,7 @@ class Panel(ScreenPanel):
 
 
         # Nowy przycisk: Uruchom HelixScreen
-        desktop_mode = self._gtk.Button("display", _("Desktop Mode"), "color5")
+        desktop_mode = self._gtk.Button("desktop", _("Desktop Mode"), "color5")
         desktop_mode.connect("clicked", self.desktop_mode_macro)
 
         self.main = Gtk.Grid(row_homogeneous=True, column_homogeneous=True)
