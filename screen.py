@@ -152,6 +152,7 @@ class KlipperScreen(Gtk.Window):
         self.setup_gtk_settings()
         self.style_provider = Gtk.CssProvider()
         self.screensaver = ScreenSaver(self)
+        self.lock_screen = LockScreen(self)
         self.gtk = KlippyGtk(self)
         self.base_css = ""
         self.load_base_styles()
@@ -179,9 +180,12 @@ class KlipperScreen(Gtk.Window):
         self.use_dpms = self._config.get_main_config().getboolean("use_dpms", fallback=(not self.wayland))
         self.use_dpms &= functions.dpms_loaded
         self.set_dpms(self.use_dpms)
-        self.lock_screen = LockScreen(self)
+        autolock = self._config.get_main_config().getint("autolock_timeout", fallback=0)
+        self.lock_screen.set_autolock_timeout(autolock)
         self.log_notification("KlipperScreen Started", 1)
         self.initial_connection()
+        if self._config.get_main_config().getboolean('start_locked', False):
+            self.lock_screen.lock(None)
 
     def update_cursor(self, show: bool):
         self.show_cursor = show
@@ -696,10 +700,8 @@ class KlipperScreen(Gtk.Window):
         if self._config.get_main_config().get('screen_blanking') != "off":
             logging.debug("Screen wake up")
         try:
-            subprocess.run(
-                f"xset -display {self.display_number} dpms force on",
-                shell=True, check=True
-            )
+            cmd = ["xset", "-display", self.display_number, "dpms", "force", "on"]
+            subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as e:
             self.show_popup_message(f"Error: {e}")
             self.set_dpms(False)
@@ -719,14 +721,10 @@ class KlipperScreen(Gtk.Window):
             state = functions.get_DPMS_state()
             if state != functions.DPMS_State.Fail:
                 try:
-                    subprocess.run(
-                        f"xset -display {self.display_number} dpms 0 0 0",
-                        shell=True, check=True
-                    )
-                    subprocess.run(
-                        f"xset -display {self.display_number} -dpms",
-                        shell=True, check=True
-                    )
+                    cmd = ["xset", "-display", self.display_number, "dpms", "0", "0", "0"]
+                    subprocess.run(cmd, check=True)
+                    cmd = ["xset", "-display", self.display_number, "-dpms"]
+                    subprocess.run(cmd, check=True)
                 except subprocess.CalledProcessError as e:
                     self.show_popup_message(f"FAILED to turn DPMS off on {self.display_number}:\n {e}")
                     return
@@ -740,10 +738,8 @@ class KlipperScreen(Gtk.Window):
 
     def set_dpms_timeout(self):
         try:
-            subprocess.run(
-                f"xset -display {self.display_number} dpms 0 {self.blanking_time} 0",
-                shell=True, check=True
-            )
+            cmd = ["xset", "-display", self.display_number, "dpms", "0", f"{self.blanking_time}", "0"]
+            subprocess.run(cmd, check=True)
             logging.info(f"DPMS on {self.display_number} set to: {self.blanking_time}")
         except subprocess.CalledProcessError as e:
             self.show_popup_message(f"DPMS Error:\n {e}")
@@ -753,6 +749,9 @@ class KlipperScreen(Gtk.Window):
             self.check_dpms_timeout = GLib.timeout_add_seconds(1, self.check_dpms_state)
             return
 
+    def set_autolock_timeout(self, time):
+        self.lock_screen.set_autolock_timeout(time)
+
     def set_screenblanking_printing_timeout(self, time):
         if self.printer and self.printer.state in ("printing", "paused"):
             self.set_screenblanking_timeout(time)
@@ -760,8 +759,10 @@ class KlipperScreen(Gtk.Window):
     def set_screenblanking_timeout(self, time):
         # disable screensaver we have our own
         if not self.wayland:
-            os.system(f"xset -display {self.display_number} s off")
-            os.system(f"xset -display {self.display_number} s noblank")
+            cmd = ["xset", "-display", self.display_number, "s", "off"]
+            subprocess.call(cmd)
+            cmd = ["xset", "-display", self.display_number, "s", "noblank"]
+            subprocess.call(cmd)
         if time == "off":
             self.blanking_time = 0
         else:
@@ -1208,6 +1209,7 @@ class KlipperScreen(Gtk.Window):
                 self.printer.configure_cameras(cameras['webcams'])
         if "spoolman" in self.server_info["components"]:
             self.printer.enable_spoolman()
+            self.base_panel.refresh_spoolman_weight()
 
     def init_klipper(self):
         if self.reinit_count > self.max_retries or 'printer_select' in self._cur_panels:

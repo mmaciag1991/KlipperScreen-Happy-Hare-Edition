@@ -166,7 +166,9 @@ class KlippyGtk:
     def Button(self, image_name=None, label=None, style=None, scale=None, position=Gtk.PositionType.TOP, lines=2):
         if self.font_size_type == "max" and label is not None:
             image_name = None
-        b = Gtk.Button(hexpand=True, vexpand=True, can_focus=False, image_position=position, always_show_image=True)
+        b = Gtk.Button(hexpand=True, vexpand=True, image_position=position, always_show_image=True)
+        focusable = self.screen._config.get_main_config().getboolean("keyboard_navigation", fallback=False)
+        b.set_can_focus(focusable)
         if label is not None:
             b.set_label(label.replace("\n", " "))
         if image_name is not None:
@@ -188,6 +190,7 @@ class KlippyGtk:
         if style is not None:
             b.get_style_context().add_class(style)
         b.connect("clicked", self.screen.screensaver.reset_timeout)
+        b.connect("clicked", self.screen.lock_screen.reset_timeout)
         return b
 
     @staticmethod
@@ -247,6 +250,7 @@ class KlippyGtk:
             dialog.connect("button-release-event", self.remove_dialog)
 
         dialog.connect("response", self.screen.screensaver.reset_timeout)
+        dialog.connect("response", self.screen.lock_screen.reset_timeout)
         dialog.connect("response", callback, *args)
         dialog.get_style_context().add_class("dialog")
 

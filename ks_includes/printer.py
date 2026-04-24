@@ -29,6 +29,9 @@ class Printer:
         self.cameras = []
         self.available_commands = {}
         self.spoolman = False
+        self.active_spool_id = None
+        self.active_spool = None
+        self.active_spool_checked = False
         self.temp_devices = self.sensors = None
         self.system_info = {}
         self.warnings = []
@@ -51,6 +54,9 @@ class Printer:
         self.has_mmu = False # Happy Hare
         self.system_info.clear()
         self.warnings = []
+        self.active_spool_id = None
+        self.active_spool = None
+        self.active_spool_checked = False
 
         for x in self.config.keys():
             # Support for hiding devices by name
@@ -440,3 +446,8 @@ class Printer:
     def enable_spoolman(self):
         logging.info("Enabling Spoolman")
         self.spoolman = True
+
+    def set_active_spool(self, spool_id=None, spool=None, checked=True):
+        self.active_spool_id = spool_id
+        self.active_spool = spool
+        self.active_spool_checked = checked
