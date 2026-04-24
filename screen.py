@@ -380,6 +380,13 @@ class KlipperScreen(Gtk.Window):
                         self.gtk.remove_dialog(dialog)
             else:
                 self._remove_current_panel()
+            try:
+                if(panel != "splash_screen"):
+                    panel="general_create"
+                self.panels[panel_name] = self._load_panel(panel).Panel(self, panel_name,**kwargs)
+            except Exception as e:
+                self.show_error_modal(f"Unable to load panel {panel}", f"{e}\n\n{traceback.format_exc()}")
+                
             if panel_name not in self.panels:
                 try:
                     self.panels[panel_name] = self._load_panel(panel).Panel(self, title, **kwargs)
