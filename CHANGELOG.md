@@ -1,6 +1,14 @@
 # Changelog
 This just tracks the most notable changes, if you want all the details checkout the commit history.
-Probably all versions contain changes regarding documentation, translation, fixes and other minor refactors
+Probably all versions 
+            requested_updates['objects'][led] = ["color_data"]
+        for e in self.printer.get_mmu_encoders(): # Happy Hare
+            requested_updates['objects'][e] = ["encoder_pos", "detection_length", "min_headroom", "headroom", "desired_headroom", "detection_mode", "enabled", "flow_rate"]
+
+        self._ws.klippy.object_subscription(requested_updates)
+        # Happy Hare TODO make this extensible with variables references in custom Menus..? Can you call object_subscription more than once?
+
+    @staticmethodcontain changes regarding documentation, translation, fixes and other minor refactors
 
 ## Current master
 

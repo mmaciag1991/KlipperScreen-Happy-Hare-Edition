@@ -385,7 +385,7 @@ class KlipperScreen(Gtk.Window):
                 panel_general_create="general_create"
                 self.panels[panel_name] = self._load_panel(panel_general_create).Panel(self, panel_name,**kwargs)
             except Exception as e:
-                logging.info(f"Reinitializing panel {panel_general_create}")
+                logging.info(f"Cant load general create panel {panel_name}")
                 
             if panel_name not in self.panels:
                 try:
