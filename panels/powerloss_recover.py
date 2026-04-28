@@ -67,7 +67,7 @@ class Panel(ScreenPanel):
         left_box.pack_start(preview_frame, False, False, 0)
 
         # Resume print button
-        self.resume_button = self._gtk.Button("resume", _("Power Loss Recovery"), "color2")
+        self.resume_button = self._gtk.Button("resume", _("Odzyskiwanie po utracie zasilania"), "color2")
         self.resume_button.connect("clicked", self.resume_print)
         self.resume_button.set_size_request(min(self.preview_size, 200), self.button_height)
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -92,7 +92,7 @@ class Panel(ScreenPanel):
         row_height = (info_height - self.margin * 5) // 6  # 6行信息，5个间隔
         
         # Filename (占用两列宽度)
-        filename_label = Gtk.Label(label=_("Filename:"), halign=Gtk.Align.START)
+        filename_label = Gtk.Label(label=_("Nazwa pliku:"), halign=Gtk.Align.START)
         filename_label.set_size_request(label_width, -1)
         filename_label.set_vexpand(True)  # 允许垂直扩展
         info_grid.attach(filename_label, 0, 0, 2, 1)
@@ -106,7 +106,7 @@ class Panel(ScreenPanel):
         info_grid.attach(self.filename_value, 0, 1, 2, 1)  # 占用下一行的两列
 
         # Print height
-        height_label = Gtk.Label(label=_("Print Height:"), halign=Gtk.Align.START)
+        height_label = Gtk.Label(label=_("Wysokość wydruku:"), halign=Gtk.Align.START)
         height_label.set_size_request(label_width, -1)
         height_label.set_vexpand(True)  # 允许垂直扩展
         self.height_value = Gtk.Label(label="", halign=Gtk.Align.START)
@@ -116,7 +116,7 @@ class Panel(ScreenPanel):
         info_grid.attach(self.height_value, 1, 2, 1, 1)
 
         # Nozzle temperature
-        nozzle_label = Gtk.Label(label=_("Nozzle Temp:"), halign=Gtk.Align.START)
+        nozzle_label = Gtk.Label(label=_("Temperatura dyszy:"), halign=Gtk.Align.START)
         nozzle_label.set_size_request(label_width, -1)
         nozzle_label.set_vexpand(True)  # 允许垂直扩展
         self.nozzle_value = Gtk.Label(label="", halign=Gtk.Align.START)
@@ -126,7 +126,7 @@ class Panel(ScreenPanel):
         info_grid.attach(self.nozzle_value, 1, 3, 1, 1)
 
         # Bed temperature
-        bed_label = Gtk.Label(label=_("Bed Temp:"), halign=Gtk.Align.START)
+        bed_label = Gtk.Label(label=_("Temperatura na łóżku:"), halign=Gtk.Align.START)
         bed_label.set_size_request(label_width, -1)
         bed_label.set_vexpand(True)  # 允许垂直扩展
         self.bed_value = Gtk.Label(label="", halign=Gtk.Align.START)
@@ -136,7 +136,7 @@ class Panel(ScreenPanel):
         info_grid.attach(self.bed_value, 1, 4, 1, 1)
 
         # Active extruder
-        extruder_label = Gtk.Label(label=_("Active Extruder:"), halign=Gtk.Align.START)
+        extruder_label = Gtk.Label(label=_("Aktywny extruder:"), halign=Gtk.Align.START)
         extruder_label.set_size_request(label_width, -1)
         extruder_label.set_vexpand(True)  # 允许垂直扩展
         self.extruder_value = Gtk.Label(label="", halign=Gtk.Align.START)
@@ -161,7 +161,7 @@ class Panel(ScreenPanel):
         
         self.tip_label = Gtk.Label()
         self.tip_label.set_markup(
-            f"<span foreground='orange'>{_('Tip: Please ensure the nozzle is about 0.1mm above the model')}</span>"
+            f"<span foreground='orange'>{_('Wskazówka: Proszę upewnić się, że dysza jest około 0,1 mm powyżej modelu')}</span>"
         )
         self.tip_label.set_halign(Gtk.Align.CENTER)
         self.tip_label.set_hexpand(True)  # 标签也设置为扩展
@@ -290,19 +290,19 @@ class Panel(ScreenPanel):
         # 检查文件路径
         try:
             if not config.get("print_state", "file_path"):
-                missing_items.append(_("Filename"))
+                missing_items.append(_("Nazwa pliku"))
         except:
-            missing_items.append(_("Filename"))
+            missing_items.append(_("Nazwa pliku"))
             
         # 检查打印高度
         try:
             z_position = float(config.get("position", "z"))
             if not z_position:
-                missing_items.append(_("Print Height"))
+                missing_items.append(_("Wysokość wydruku"))
             elif z_position < 1:  # 检查打印高度是否小于1mm
-                warnings.append(_("Print height is less than 1mm"))
+                warnings.append(_("Wysokość wydruku jest mniejsza niż 1 mm"))
         except:
-            missing_items.append(_("Print Height"))
+            missing_items.append(_("Wysokość wydruku"))
             
         # 检查温度信息
         has_extruder_temp = False
@@ -315,20 +315,20 @@ class Panel(ScreenPanel):
             pass
         
         if not has_extruder_temp:
-            missing_items.append(_("Nozzle Temperature"))
+            missing_items.append(_("Temperatura dyszy"))
             
         try:
             if not config.has_option("temperatures", "bed"):
-                missing_items.append(_("Bed Temperature"))
+                missing_items.append(_("Temperatura łoza"))
         except:
-            missing_items.append(_("Bed Temperature"))
+            missing_items.append(_("Temperatura łoza"))
             
         # 检查活跃喷头
         try:
             if not config.get("extruder", "active_extruder"):
-                missing_items.append(_("Active Extruder"))
+                missing_items.append(_("Aktywny Extruder"))
         except:
-            missing_items.append(_("Active Extruder"))
+            missing_items.append(_("Aktywny Extruder"))
             
         return missing_items, warnings
 
@@ -342,7 +342,7 @@ class Panel(ScreenPanel):
             if missing_items:
                 missing_info = ", ".join(missing_items)
                 self.tip_label.set_markup(
-                    f"<span foreground='red'>{_('Missing required information')}: {missing_info}</span>"
+                    f"<span foreground='red'>{_('Brakujące wymagane informacje')}: {missing_info}</span>"
                 )
             elif warnings:
                 warning_info = ", ".join(warnings)
@@ -427,7 +427,7 @@ class Panel(ScreenPanel):
             if self.filename is None:
                 logging.error("No filename available for resume")
                 self.tip_label.set_markup(
-                    f"<span foreground='red'>{_('Missing required recovery data')}</span>"
+                    f"<span foreground='red'>{_('Brakujące wymagane dane odzyskiwania')}</span>"
                 )
                 return
                 
@@ -437,7 +437,7 @@ class Panel(ScreenPanel):
             if not os.path.exists(self.print_state_file):
                 logging.error(f"Print state file not found: {self.print_state_file}")
                 self.tip_label.set_markup(
-                    f"<span foreground='red'>{_('No power loss recovery data found')}</span>"
+                    f"<span foreground='red'>{_('Brak danych o odzyskaniu po utracie zasilania')}</span>"
                 )
                 return
                 
@@ -447,7 +447,7 @@ class Panel(ScreenPanel):
             except Exception as e:
                 logging.exception(f"Failed to read print state file: {str(e)}")
                 self.tip_label.set_markup(
-                    f"<span foreground='red'>{_('Error reading recovery file')}</span>"
+                    f"<span foreground='red'>{_('Błąd przy odczytu pliku odzyskiwania')}</span>"
                 )
                 return
             
@@ -549,14 +549,14 @@ class Panel(ScreenPanel):
             except Exception as e:
                 logging.exception(f"Failed to send resume print commands: {str(e)}")
                 self.tip_label.set_markup(
-                    f"<span foreground='red'>{_('Failed to resume print')}</span>"
+                    f"<span foreground='red'>{_('Nie wznowiono druku')}</span>"
                 )
                 return
                 
         except Exception as e:
             logging.exception(f"Unexpected error during resume print: {str(e)}")
             self.tip_label.set_markup(
-                f"<span foreground='red'>{_('Failed to resume print')}</span>"
+                f"<span foreground='red'>{_('Nie wznowiono druku')}</span>"
             )
             return
 
